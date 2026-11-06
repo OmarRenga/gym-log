@@ -1,0 +1,10 @@
+{
+  "name": "Gym log",
+  "short_name": "Gym log",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#3B1F4D",
+  "theme_color": "#3B1F4D",
+  "icons": [{ "src": "icon.png", "sizes": "256x256", "type": "image/png", "purpose": "any maskable" }]
+}
