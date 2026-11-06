@@ -140,7 +140,7 @@
       m.innerHTML = h; return;
     }
     var h2 = '<h2>' + esc(d.day) + '</h2><p class="muted small">' + dmy(d.date) + ', started ' + d.start + '</p>' + painRow('painBefore', 'Back pain now (0 none, 10 worst)');
-    if (d.painBefore != null && d.painBefore >= 7) h2 += '<div class="note warn">Your rehab tracker says 7-10 means stop. Do the back block only today, or rest.</div>';
+    if (d.painBefore != null && d.painBefore >= 7) h2 += '<div class="note warn">Your rehab tracker says 7-10 means stop. Do the back block only today, or rest. These are the rules from your tracker, not medical advice; your physio has the final say.</div>';
     d.exercises.forEach(function (e, i) {
       h2 += '<div class="ex' + (e.lift ? ' main' : '') + '"><div class="row"><h3>' + esc(e.name) + '</h3><span class="sp"></span><span class="tgt">' + esc(e.target) + '</span></div>' + (e.hold ? '<div class="note warn small">' + esc(e.hold) + '</div>' : '') +
         '<div class="set" aria-hidden="true"><span class="lab">set</span><span class="lab">kg</span><span class="lab">reps</span><span></span></div>' +
@@ -148,13 +148,13 @@
         '<button type="button" class="btn small" data-add="' + i + '" style="margin-top:8px">+ set</button></div>';
     });
     h2 += '<div class="ex"><h3>Back block</h3>' + REHAB.map(function (r) { return '<label class="check"><input type="checkbox" data-rehab="' + esc(r) + '"' + (d.rehab.indexOf(r) >= 0 ? ' checked' : '') + '>' + esc(r) + '</label>'; }).join('') + '</div>';
-    h2 += '<div class="ex"><h3>Cardio</h3>' + d.cardio.map(function (c, i) { return '<p class="small">' + esc(c.type) + ': ' + (c.min || '-') + ' min' + (c.km ? ', ' + c.km + ' km' : '') + (c.min && c.km ? ', ' + pace(c.min / c.km) + ' per km' : '') + (c.hr ? ', ' + c.hr + ' bpm' : '') + ' <button class="btn small" data-delc="' + i + '">Remove</button></p>'; }).join('') +
+    h2 += '<div class="ex"><h3>Cardio</h3>' + d.cardio.map(function (c, i) { return '<p class="small">' + esc(c.type) + ': ' + (c.min || '-') + ' min' + (c.km ? ', ' + c.km + ' km' : '') + (c.min && c.km ? (/cycl/i.test(c.type) ? ', ' + Math.round(c.km / (c.min / 60) * 10) / 10 + ' km/h' : ', ' + pace(c.min / c.km) + ' per km') : '') + (c.hr ? ', ' + c.hr + ' bpm' : '') + ' <button class="btn small" data-delc="' + i + '">Remove</button></p>'; }).join('') +
       '<div class="row"><select class="f" id="ct" style="flex:2">' + CARDIO.map(function (c) { return '<option>' + c + '</option>'; }).join('') + '</select><input class="f" id="cm" inputmode="numeric" placeholder="min" style="flex:1"><input class="f" id="ck" inputmode="decimal" placeholder="km" style="flex:1"><input class="f" id="ch" inputmode="numeric" placeholder="bpm" style="flex:1"></div><button class="btn small" id="addc" style="margin-top:8px">Add cardio</button></div>';
     h2 += painRow('painDuring', 'Back pain during (highest)') + painRow('painAfter', 'Back pain after') +
       '<label class="f">Effort, 1 easy to 10 all-out</label><div class="pain" data-pain="rpe">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (i) { return '<button type="button" data-n="' + i + '" aria-pressed="' + (d.rpe === i) + '">' + i + '</button>'; }).join('') + '</div>' +
       '<label class="f" for="bw">Body weight (kg)</label><input class="f" id="bw" inputmode="decimal" value="' + esc(d.bodyKg) + '">' +
       '<label class="f" for="nt">How you felt, anything to remember</label><textarea class="f" id="nt" rows="2">' + esc(d.note) + '</textarea>';
-    if (d.painDuring != null && d.painDuring >= 7) h2 += '<div class="note warn">Pain of 7 or more: your tracker says stop immediately.</div>';
+    if (d.painDuring != null && d.painDuring >= 7) h2 += '<div class="note warn">Pain of 7 or more: your tracker says stop immediately. If it stays high, ask your physio.</div>';
     m.innerHTML = h2 + '<div class="bar"><button class="btn" id="cancel">Discard</button><button class="btn primary" id="finish">Finish and save</button></div>';
   }
   function history() {
@@ -167,7 +167,7 @@
     var st = S.settings, h = '<h2>Training maxes</h2><p class="muted small">The weights 5-3-1 works from, in kg. Your plan uses a percentage of these each week. Type yours in; they go up by themselves after each deload week.</p>';
     Object.keys(MAIN).forEach(function (k) { h += '<label class="f" for="tm-' + k + '">' + MAIN[k] + ' (now week ' + st.week[k] + ', cycle ' + st.cycle[k] + ')</label><input class="f" id="tm-' + k + '" data-tm="' + k + '" inputmode="decimal" value="' + esc(st.tm[k] || '') + '">'; });
     h += '<h2>Rise each cycle</h2><p class="muted small">Your 5-3-1 sheet does not say how much to add; these are the usual 5-3-1 amounts. Change them if you like.</p><label class="f" for="il">Squat and deadlift (kg)</label><input class="f" id="il" inputmode="decimal" value="' + st.inc.lower + '"><label class="f" for="iu">Bench and overhead press (kg)</label><input class="f" id="iu" inputmode="decimal" value="' + st.inc.upper + '">' +
-      '<p class="muted small">Squat and deadlift do not rise when back pain after a session was 6 or more, or has gone up two sessions running.</p>' +
+      '<p class="muted small">Squat and deadlift do not rise when back pain after a session was 6 or more, or has gone up two sessions running. These follow your rehab tracker; they are not medical advice, and your physio has the final say.</p>' +
       '<h2>Plates (one side)</h2><input class="f" id="pl" value="' + st.plates.join(', ') + '"><p class="muted small">Bar ' + st.bar + ' kg. Heaviest you can load: ' + loadable().slice(-1)[0].kg + ' kg. Suggested weights are rounded down to what you can load.</p>' +
       '<h2>Week of each lift</h2><p class="muted small">If you skipped or repeated a week, set it here.</p>' + Object.keys(MAIN).map(function (k) { return '<label class="f">' + MAIN[k] + '</label><select class="f" data-wk="' + k + '">' + [1, 2, 3, 4].map(function (w) { return '<option value="' + w + '"' + (st.week[k] === w ? ' selected' : '') + '>Week ' + w + (w === 4 ? ' (deload)' : '') + '</option>'; }).join('') + '</select>'; }).join('') +
       '<button class="btn primary" id="saveset" style="margin-top:14px;width:100%">Save settings</button>';
