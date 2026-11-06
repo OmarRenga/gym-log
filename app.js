@@ -66,11 +66,14 @@
   function lastTop(lift) { for (var i = S.sessions.length - 1; i >= 0; i--) { var e = (S.sessions[i].exercises || []).find(function (x) { return x.lift === lift; }); if (e) { var top = 0; e.sets.forEach(function (s) { if (s.done && !s.warm && +s.kg > top) top = +s.kg; }); if (top) return top; } } return 0; }
 
   function mainSets(lift) { var tm = +S.settings.tm[lift]; if (!tm) return null;
-    var w = WEEKS[S.settings.week[lift]] || WEEKS[1], hold = LOWER[lift] ? backHold() : '', cap = hold ? lastTop(lift) : 0, out = [];
+    var hold = LOWER[lift] ? backHold() : '', cap = hold ? lastTop(lift) : 0, out = [];
+    // held by the back with nothing logged yet to hold at: the deload week's weights
+    var w = hold && !cap ? WEEKS[4] : (WEEKS[S.settings.week[lift]] || WEEKS[1]);
     WARM.p.forEach(function (p, i) { var x = roundLoad(tm * p / 100); out.push({ kg: x.kg, reps: WARM.r[i], warm: true, plates: platesText(x), pct: p }); });
     w.p.forEach(function (p, i) { var x = roundLoad(tm * p / 100); if (cap && x.kg > cap) x = roundLoad(cap); out.push({ kg: x.kg, reps: w.r[i], warm: false, plates: platesText(x), pct: p }); });
     return { sets: out, week: S.settings.week[lift], hold: hold }; }
 
+  function pace(p) { var m = Math.floor(p), s = Math.round((p - m) * 60); if (s === 60) { m++; s = 0; } return m + ':' + pad(s); }
   function lastOf(name) { for (var i = S.sessions.length - 1; i >= 0; i--) { var e = (S.sessions[i].exercises || []).find(function (x) { return x.name === name; }); if (e) return e; } return null; }
   function nextDay() { for (var i = S.sessions.length - 1; i >= 0; i--) { var d = S.sessions[i].day, k = ORDER.indexOf(d); if (k >= 0) return ORDER[(k + 1) % 4]; } return ORDER[0]; }
 
@@ -145,7 +148,7 @@
         '<button type="button" class="btn small" data-add="' + i + '" style="margin-top:8px">+ set</button></div>';
     });
     h2 += '<div class="ex"><h3>Back block</h3>' + REHAB.map(function (r) { return '<label class="check"><input type="checkbox" data-rehab="' + esc(r) + '"' + (d.rehab.indexOf(r) >= 0 ? ' checked' : '') + '>' + esc(r) + '</label>'; }).join('') + '</div>';
-    h2 += '<div class="ex"><h3>Cardio</h3>' + d.cardio.map(function (c, i) { return '<p class="small">' + esc(c.type) + ': ' + (c.min || '-') + ' min' + (c.km ? ', ' + c.km + ' km' : '') + (c.hr ? ', ' + c.hr + ' bpm' : '') + ' <button class="btn small" data-delc="' + i + '">Remove</button></p>'; }).join('') +
+    h2 += '<div class="ex"><h3>Cardio</h3>' + d.cardio.map(function (c, i) { return '<p class="small">' + esc(c.type) + ': ' + (c.min || '-') + ' min' + (c.km ? ', ' + c.km + ' km' : '') + (c.min && c.km ? ', ' + pace(c.min / c.km) + ' per km' : '') + (c.hr ? ', ' + c.hr + ' bpm' : '') + ' <button class="btn small" data-delc="' + i + '">Remove</button></p>'; }).join('') +
       '<div class="row"><select class="f" id="ct" style="flex:2">' + CARDIO.map(function (c) { return '<option>' + c + '</option>'; }).join('') + '</select><input class="f" id="cm" inputmode="numeric" placeholder="min" style="flex:1"><input class="f" id="ck" inputmode="decimal" placeholder="km" style="flex:1"><input class="f" id="ch" inputmode="numeric" placeholder="bpm" style="flex:1"></div><button class="btn small" id="addc" style="margin-top:8px">Add cardio</button></div>';
     h2 += painRow('painDuring', 'Back pain during (highest)') + painRow('painAfter', 'Back pain after') +
       '<label class="f">Effort, 1 easy to 10 all-out</label><div class="pain" data-pain="rpe">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (i) { return '<button type="button" data-n="' + i + '" aria-pressed="' + (d.rpe === i) + '">' + i + '</button>'; }).join('') + '</div>' +
@@ -163,7 +166,7 @@
   function settings() {
     var st = S.settings, h = '<h2>Training maxes</h2><p class="muted small">The weights 5-3-1 works from, in kg. Your plan uses a percentage of these each week. Type yours in; they go up by themselves after each deload week.</p>';
     Object.keys(MAIN).forEach(function (k) { h += '<label class="f" for="tm-' + k + '">' + MAIN[k] + ' (now week ' + st.week[k] + ', cycle ' + st.cycle[k] + ')</label><input class="f" id="tm-' + k + '" data-tm="' + k + '" inputmode="decimal" value="' + esc(st.tm[k] || '') + '">'; });
-    h += '<h2>Rise each cycle</h2><label class="f" for="il">Squat and deadlift (kg)</label><input class="f" id="il" inputmode="decimal" value="' + st.inc.lower + '"><label class="f" for="iu">Bench and overhead press (kg)</label><input class="f" id="iu" inputmode="decimal" value="' + st.inc.upper + '">' +
+    h += '<h2>Rise each cycle</h2><p class="muted small">Your 5-3-1 sheet does not say how much to add; these are the usual 5-3-1 amounts. Change them if you like.</p><label class="f" for="il">Squat and deadlift (kg)</label><input class="f" id="il" inputmode="decimal" value="' + st.inc.lower + '"><label class="f" for="iu">Bench and overhead press (kg)</label><input class="f" id="iu" inputmode="decimal" value="' + st.inc.upper + '">' +
       '<p class="muted small">Squat and deadlift do not rise when back pain after a session was 6 or more, or has gone up two sessions running.</p>' +
       '<h2>Plates (one side)</h2><input class="f" id="pl" value="' + st.plates.join(', ') + '"><p class="muted small">Bar ' + st.bar + ' kg. Heaviest you can load: ' + loadable().slice(-1)[0].kg + ' kg. Suggested weights are rounded down to what you can load.</p>' +
       '<h2>Week of each lift</h2><p class="muted small">If you skipped or repeated a week, set it here.</p>' + Object.keys(MAIN).map(function (k) { return '<label class="f">' + MAIN[k] + '</label><select class="f" data-wk="' + k + '">' + [1, 2, 3, 4].map(function (w) { return '<option value="' + w + '"' + (st.week[k] === w ? ' selected' : '') + '>Week ' + w + (w === 4 ? ' (deload)' : '') + '</option>'; }).join('') + '</select>'; }).join('') +
